@@ -1,0 +1,11 @@
+.env
+venv/
+env/
+.DS_Store
+Thumbs.db
+__pycache__/
+.idea
+.vscode
+implementation_plan.txt
+logs
+*.log
