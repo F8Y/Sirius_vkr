@@ -1,0 +1,12 @@
+[project]
+name = "sirius27-tools"
+version = "0.1.0"
+description = "Utility scripts for Сириус 27 (synthetic data generation, etc.)"
+requires-python = ">=3.12"
+dependencies = [
+    "faker>=26.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

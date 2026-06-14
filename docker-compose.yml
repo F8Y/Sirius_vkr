@@ -1,0 +1,119 @@
+services:
+  # ── PostgreSQL 16 ─────────────────────────────────────────
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      VAULT_ROLE_PASSWORD: ${VAULT_ROLE_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sirius-net
+
+  # ── Redis 7 ───────────────────────────────────────────────
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sirius-net
+
+  # ── Backend (FastAPI) ─────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      STREAM_NAME: ${STREAM_NAME}
+      CONSUMER_GROUP: ${CONSUMER_GROUP}
+      SECRET_KEY: ${SECRET_KEY}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
+    volumes:
+      # Shared dataset drop-zone: place generator output here, reference it as
+      # /data/imports/<dataset> in the import job's file_path.
+      - ./data/imports:/data/imports
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - sirius-net
+
+  # ── Worker (Go) ───────────────────────────────────────────
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      REDIS_URL: ${REDIS_URL}
+      STREAM_NAME: ${STREAM_NAME}
+      CONSUMER_GROUP: ${CONSUMER_GROUP}
+      CONSUMER_NAME: ${CONSUMER_NAME}
+    volumes:
+      # Same drop-zone as backend — the worker reads datasets from here.
+      - ./data/imports:/data/imports
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sirius-net
+
+  # ── Frontend (Next.js) ────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://backend:8000
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - sirius-net
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  sirius-net:
+    driver: bridge
