@@ -86,7 +86,7 @@ async def list_courses(db: AsyncSession, direction: str | None = None) -> list[C
                 JOIN core.modules m ON m.id = l.module_id
                 WHERE m.course_id = c.id) AS lessons_count
         FROM core.courses c
-        WHERE (:direction IS NULL OR c.direction = :direction)
+        WHERE (CAST(:direction AS text) IS NULL OR c.direction = :direction)
         ORDER BY c.title
         """
     )
@@ -213,7 +213,7 @@ async def list_groups(db: AsyncSession, course_id: uuid.UUID | None = None) -> l
                (SELECT count(*) FROM core.enrollments e WHERE e.group_id = g.id) AS members_count
         FROM core.groups g
         JOIN core.courses c ON c.id = g.course_id
-        WHERE (:course_id IS NULL OR g.course_id = :course_id)
+        WHERE (CAST(:course_id AS uuid) IS NULL OR g.course_id = :course_id)
         ORDER BY c.title, g.name
         """
     )

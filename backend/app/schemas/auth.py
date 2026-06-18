@@ -33,7 +33,9 @@ class UserResponse(BaseModel):
     """Public representation of a user account."""
 
     id: uuid.UUID
-    email: EmailStr
+    # Plain str (not EmailStr): this is an output DTO, and strict email
+    # validation needlessly rejects valid internal domains like ``*.local``.
+    email: str
     is_active: bool
     roles: list[str]
     created_at: datetime
