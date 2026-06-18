@@ -49,6 +49,8 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
+      SEED_DEMO: ${SEED_DEMO}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD}
     volumes:
       # Shared dataset drop-zone: place generator output here, reference it as
       # /data/imports/<dataset> in the import job's file_path.

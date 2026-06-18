@@ -1,6 +1,7 @@
 """Сириус 27 — Backend API."""
 
 import contextlib
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -39,6 +40,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 settings.bootstrap_admin_email,
                 settings.bootstrap_admin_password,
             )
+
+    # Idempotently seed demo learning data + accounts for the portals. A seed
+    # failure must not take the API down — log it and continue serving.
+    if settings.seed_demo:
+        from app.seed_demo import seed as seed_demo
+
+        try:
+            async with async_session_factory() as session:
+                await seed_demo(session)
+        except Exception:
+            logging.getLogger(__name__).exception("Demo seed failed; continuing without it")
 
     yield
 

@@ -42,6 +42,13 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 #         annotating it with ClassVar (ruff's fix) breaks mypy's override check.
 ignore = ["E501", "B008", "RUF012"]
 
+[tool.ruff.lint.per-file-ignores]
+# The demo seed is intentionally full of Russian demo strings and ships a
+# Cyrillic→Latin transliteration table, so confusable-character checks (RUF001
+# string / RUF002 docstring / RUF003 comment) fire by design — silence them
+# here rather than littering the file with per-line noqa.
+"app/seed_demo.py" = ["RUF001", "RUF002", "RUF003"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 

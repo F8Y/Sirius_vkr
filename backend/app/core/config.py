@@ -52,5 +52,12 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
 
+    # ── Demo seed (idempotent; fills the learning portals for the defence) ─
+    # When true, startup provisions demo teacher/child/parent accounts and
+    # populates courses/groups/enrollments/schedule/gamification so the portals
+    # are not empty. Demo accounts share ``seed_demo_password``.
+    seed_demo: bool = False
+    seed_demo_password: str = "demo12345"
+
 
 settings = Settings()

@@ -9,17 +9,17 @@ Revises: b2c3d4e5f6a7
 Create Date: 2026-06-15
 
 """
+
 from collections.abc import Sequence
-from typing import Union
 
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 revision: str = "c3d4e5f6a7b8"
-down_revision: Union[str, None] = "b2c3d4e5f6a7"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "b2c3d4e5f6a7"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -44,9 +44,7 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "subject_type IN ('student', 'guardian')", name="ck_subject_request_subject_type"
         ),
-        sa.CheckConstraint(
-            "request_type IN ('export', 'delete')", name="ck_subject_request_type"
-        ),
+        sa.CheckConstraint("request_type IN ('export', 'delete')", name="ck_subject_request_type"),
         sa.CheckConstraint(
             "status IN ('new', 'in_progress', 'done', 'rejected')",
             name="ck_subject_request_status",

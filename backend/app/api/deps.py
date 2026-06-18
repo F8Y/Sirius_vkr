@@ -61,3 +61,9 @@ def require_roles(*roles: RoleName) -> Callable[[User], Awaitable[User]]:
 
 # Convenience guard for admin-only / sensitive PII operations.
 require_admin = require_roles(RoleName.ADMIN)
+
+# Staff guard: teacher or admin (course/group management, analytics, registry).
+require_staff = require_roles(RoleName.TEACHER, RoleName.ADMIN)
+
+# Portal guard: child or parent (own dashboard / achievements / children).
+require_portal = require_roles(RoleName.CHILD, RoleName.PARENT)
