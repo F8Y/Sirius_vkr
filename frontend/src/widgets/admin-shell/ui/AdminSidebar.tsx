@@ -22,16 +22,16 @@ const GROUPS: NavGroup[] = [
     title: "Обзор",
     links: [
       { label: "Дашборд", href: "/admin" },
-      { label: "Аналитика", soon: true },
+      { label: "Аналитика", href: "/teacher/analytics" },
     ],
   },
   {
     title: "Обучение",
     links: [
-      { label: "Успеваемость", soon: true },
-      { label: "Мои курсы", soon: true },
-      { label: "Группы", soon: true },
-      { label: "Расписание", soon: true },
+      { label: "Успеваемость", href: "/teacher/students" },
+      { label: "Мои курсы", href: "/teacher/courses" },
+      { label: "Группы", href: "/teacher/groups" },
+      { label: "Расписание", href: "/teacher/schedule" },
       { label: "Работы", soon: true },
     ],
   },

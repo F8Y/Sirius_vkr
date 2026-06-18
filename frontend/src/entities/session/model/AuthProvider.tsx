@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { clearToken, getToken, setToken } from "@/shared/lib/session";
 import { fetchMe, login as apiLogin } from "../api";
-import type { CurrentUser } from "./types";
+import type { CurrentUser, RoleName } from "./types";
 
 interface AuthContextValue {
   user: CurrentUser | null;
@@ -66,4 +66,21 @@ export function useAuth(): AuthContextValue {
 
 export function isAdmin(user: CurrentUser | null): boolean {
   return !!user && user.roles.includes("admin");
+}
+
+export function hasRole(user: CurrentUser | null, ...roles: RoleName[]): boolean {
+  return !!user && roles.some((r) => user.roles.includes(r));
+}
+
+/**
+ * Landing route after login, by role. Admin → security contour; teacher → staff
+ * teaching portal; child/parent → student/parent portal. Admin is checked first
+ * because it is the most privileged combination.
+ */
+export function homePathFor(user: CurrentUser | null): string {
+  if (!user) return "/login";
+  if (user.roles.includes("admin")) return "/admin";
+  if (user.roles.includes("teacher")) return "/teacher";
+  if (user.roles.includes("child") || user.roles.includes("parent")) return "/dashboard";
+  return "/login";
 }

@@ -20,6 +20,7 @@ from app.schemas.learning import (
     ChildItem,
     CourseCreate,
     CourseDetail,
+    CourseGroupRef,
     CourseSummary,
     DashboardCourse,
     DashboardResponse,
@@ -153,7 +154,13 @@ async def get_course_detail(db: AsyncSession, course_id: uuid.UUID) -> CourseDet
                 )
             )
 
-    return CourseDetail(**dict(course), modules=list(modules.values()))
+    group_rows = await db.execute(
+        text("SELECT id, name FROM core.groups WHERE course_id = :cid ORDER BY name"),
+        {"cid": course_id},
+    )
+    groups = [CourseGroupRef(**dict(g._mapping)) for g in group_rows]
+
+    return CourseDetail(**dict(course), modules=list(modules.values()), groups=groups)
 
 
 async def create_course(

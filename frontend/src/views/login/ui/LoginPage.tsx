@@ -3,9 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/api";
-import { isAdmin, useAuth } from "@/entities/session";
-
-const ADMIN_HOME = "/admin/data/import";
+import { homePathFor, useAuth } from "@/entities/session";
 
 export function LoginPage() {
   const { user, loading, login } = useAuth();
@@ -15,9 +13,9 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Already signed in → skip the form.
+  // Already signed in → skip the form, land in the role's home contour.
   useEffect(() => {
-    if (!loading && user && isAdmin(user)) router.replace(ADMIN_HOME);
+    if (!loading && user) router.replace(homePathFor(user));
   }, [loading, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,11 +24,7 @@ export function LoginPage() {
     setError(null);
     try {
       const me = await login(email, password);
-      if (isAdmin(me)) {
-        router.replace(ADMIN_HOME);
-      } else {
-        setError("Этот контур доступен только администратору безопасности.");
-      }
+      router.replace(homePathFor(me));
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -73,11 +67,11 @@ export function LoginPage() {
           </div>
         </div>
         <h1 style={{ fontSize: "1.9rem", fontWeight: 800, maxWidth: "420px" }}>
-          Контур защиты персональных данных
+          Образовательная платформа регионального центра
         </h1>
         <p style={{ color: "var(--text-secondary)", maxWidth: "420px", lineHeight: 1.6 }}>
-          Импорт, обезличивание и учёт согласий в соответствии с требованиями 152-ФЗ. Вход открыт
-          администратору безопасности.
+          Курсы, расписание и достижения для обучающихся и родителей, рабочие инструменты для
+          преподавателей и контур защиты персональных данных по 152-ФЗ для администратора.
         </p>
       </div>
 

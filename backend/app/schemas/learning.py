@@ -40,8 +40,17 @@ class ModuleItem(BaseModel):
     lessons: list[LessonItem] = Field(default_factory=list)
 
 
+class CourseGroupRef(BaseModel):
+    """Lightweight group reference on a course detail — lets a child pick a group
+    to enrol into without exposing the staff-only groups registry. No PII."""
+
+    id: uuid.UUID
+    name: str
+
+
 class CourseDetail(CourseSummary):
     modules: list[ModuleItem] = Field(default_factory=list)
+    groups: list[CourseGroupRef] = Field(default_factory=list)
 
 
 class CourseCreate(BaseModel):
