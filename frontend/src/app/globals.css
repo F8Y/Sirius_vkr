@@ -459,3 +459,143 @@ html, body {
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* ── Admin contour additions (Batch 4) ─────────────────────── */
+
+.nav-item { text-decoration: none; }
+
+.nav-soon {
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background-color: var(--border-color);
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+.panel {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-card);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.panel-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.panel-subtitle { font-size: 0.82rem; color: var(--text-secondary); }
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius-card);
+  padding: var(--spacing-xl) var(--spacing-md);
+  text-align: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  background-color: var(--bg-primary);
+}
+
+.dropzone.dragging { border-color: var(--color-primary-blue); background-color: rgba(26, 86, 219, 0.05); }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+.data-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  font-weight: 700;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background-color: var(--bg-primary); }
+
+.segmented {
+  display: inline-flex;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-input);
+  padding: 4px;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.segmented button.active { background-color: var(--color-primary-blue); color: #fff; }
+.segmented button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-input);
+  background-color: var(--bg-primary);
+}
+
+.field-name { font-weight: 600; font-size: 0.9rem; }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tag-direct { background-color: var(--status-red-bg); color: var(--status-red-text); }
+.tag-quasi { background-color: var(--status-yellow-bg); color: var(--status-yellow-text); }
+.tag-method { background-color: var(--status-blue-bg); color: var(--status-blue-text); }
+
+.k-panel { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; }
+
+.k-dial {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.k-dial.compliant { background-color: var(--status-green-bg); color: var(--status-green-text); }
+.k-dial.violation { background-color: var(--status-red-bg); color: var(--status-red-text); }
+.k-dial .k-value { font-size: 2.4rem; line-height: 1; }
+.k-dial .k-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+@media (max-width: 700px) {
+  .k-panel { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+}

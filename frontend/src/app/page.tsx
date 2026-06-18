@@ -1,5 +1,7 @@
-import { DashboardPage } from "@/views/dashboard/ui/DashboardPage";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <DashboardPage />;
+  // Entry point routes into the admin contour; the (admin) guard then enforces
+  // authentication and bounces unauthenticated visitors to /login.
+  redirect("/admin/data/import");
 }

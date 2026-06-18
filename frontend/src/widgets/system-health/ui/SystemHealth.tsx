@@ -42,7 +42,6 @@ export function SystemHealth() {
     <div className="bento-card col-4">
       <h2 className="section-title">Состояние системы</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
-        
         <div className="health-row">
           <span className="health-service">API бэкенда</span>
           <div className="health-status">
@@ -72,10 +71,18 @@ export function SystemHealth() {
             <span className={getStatusClass(health?.services.redis)}></span>
           </div>
         </div>
-        
       </div>
       {error && (
-        <div style={{ marginTop: "12px", fontSize: "0.75rem", color: "var(--status-red-text)", backgroundColor: "var(--status-red-bg)", padding: "8px", borderRadius: "6px" }}>
+        <div
+          style={{
+            marginTop: "12px",
+            fontSize: "0.75rem",
+            color: "var(--status-red-text)",
+            backgroundColor: "var(--status-red-bg)",
+            padding: "8px",
+            borderRadius: "6px",
+          }}
+        >
           Соединение с сервером потеряно: {error}
         </div>
       )}

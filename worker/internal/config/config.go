@@ -11,6 +11,7 @@ type Config struct {
 	StreamName    string
 	ConsumerGroup string
 	ConsumerName  string
+	OutputDir     string
 }
 
 // LoadConfig parses configuration from environment variables with safe fallbacks.
@@ -40,11 +41,19 @@ func LoadConfig() *Config {
 		consumerName = "worker-1"
 	}
 
+	// Shared drop-zone (mounted in docker-compose). Import datasets are read
+	// from here; anonymize jobs write their de-identified output under it.
+	outputDir := os.Getenv("OUTPUT_DIR")
+	if outputDir == "" {
+		outputDir = "/data/imports"
+	}
+
 	return &Config{
 		DatabaseURL:   dbURL,
 		RedisURL:      redisURL,
 		StreamName:    streamName,
 		ConsumerGroup: consumerGroup,
 		ConsumerName:  consumerName,
+		OutputDir:     outputDir,
 	}
 }

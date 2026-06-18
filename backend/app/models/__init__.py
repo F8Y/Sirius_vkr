@@ -5,6 +5,7 @@ from app.models.job import Job
 from app.models.learning import Activity, Course, Enrollment, Group
 from app.models.pseudonym import PseudonymMap
 from app.models.student import Guardian, Student, StudentGuardian
+from app.models.subject_request import SubjectRequest
 from app.models.user import Role, User, UserRole
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "Role",
     "Student",
     "StudentGuardian",
+    "SubjectRequest",
     "User",
     "UserRole",
 ]

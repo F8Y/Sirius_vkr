@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -177,6 +178,179 @@ func (s *Store) InsertLink(ctx context.Context, studentID, guardianID string) (b
 		return false, err
 	}
 	return tag.RowsAffected() > 0, nil
+}
+
+// ── De-identification (Batch 3) ──────────────────────────────────────────
+
+// DecryptedStudent is a student row with its PII decrypted back to plaintext
+// via vault.decrypt_pii. Nullable PII columns come back as nil pointers.
+type DecryptedStudent struct {
+	ID         string
+	LastName   *string
+	FirstName  *string
+	MiddleName *string
+	Email      *string
+	Phone      *string
+	BirthDate  *time.Time
+}
+
+// DecryptedGuardian is a guardian row with its PII decrypted to plaintext.
+type DecryptedGuardian struct {
+	ID           string
+	LastName     *string
+	FirstName    *string
+	MiddleName   *string
+	Email        *string
+	Phone        *string
+	RelationType *string
+}
+
+// LoadStudents reads every student and decrypts its PII through the vault
+// SECURITY DEFINER function. This is the only path that turns stored ciphertext
+// back into plaintext, so it is the entry point for both de-identification modes.
+func (s *Store) LoadStudents(ctx context.Context) ([]DecryptedStudent, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text,
+		       vault.decrypt_pii(last_name),
+		       vault.decrypt_pii(first_name),
+		       vault.decrypt_pii(middle_name),
+		       vault.decrypt_pii(email),
+		       vault.decrypt_pii(phone),
+		       birth_date
+		FROM core.students
+		ORDER BY id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("load students: %w", err)
+	}
+	defer rows.Close()
+
+	var out []DecryptedStudent
+	for rows.Next() {
+		var r DecryptedStudent
+		if err := rows.Scan(&r.ID, &r.LastName, &r.FirstName, &r.MiddleName,
+			&r.Email, &r.Phone, &r.BirthDate); err != nil {
+			return nil, fmt.Errorf("scan student: %w", err)
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate students: %w", err)
+	}
+	return out, nil
+}
+
+// LoadGuardians reads every guardian and decrypts its PII to plaintext.
+func (s *Store) LoadGuardians(ctx context.Context) ([]DecryptedGuardian, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text,
+		       vault.decrypt_pii(last_name),
+		       vault.decrypt_pii(first_name),
+		       vault.decrypt_pii(middle_name),
+		       vault.decrypt_pii(email),
+		       vault.decrypt_pii(phone),
+		       relation_type
+		FROM core.guardians
+		ORDER BY id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("load guardians: %w", err)
+	}
+	defer rows.Close()
+
+	var out []DecryptedGuardian
+	for rows.Next() {
+		var r DecryptedGuardian
+		if err := rows.Scan(&r.ID, &r.LastName, &r.FirstName, &r.MiddleName,
+			&r.Email, &r.Phone, &r.RelationType); err != nil {
+			return nil, fmt.Errorf("scan guardian: %w", err)
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate guardians: %w", err)
+	}
+	return out, nil
+}
+
+// UpsertPseudonym records (or re-confirms) the reversible mapping for one field
+// of one entity in vault.pseudonym_map and returns the effective token.
+//
+// On the first call for a given (entity_type, entity_id, field_name) the
+// supplied token is stored. On any later call the existing token is KEPT (only
+// the original_hash is refreshed) and returned, so pseudonymization is stable
+// and idempotent across re-runs. The map stores a hash of the original — never
+// the plaintext — so the vault table alone does not leak PII; reversal is done
+// by joining the token back to the entity and decrypting from core (see
+// RestorePseudonym).
+func (s *Store) UpsertPseudonym(
+	ctx context.Context, entityType, entityID, fieldName, originalHash, token string,
+) (string, error) {
+	var effective string
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO vault.pseudonym_map
+		    (entity_type, entity_id, field_name, original_hash, pseudonym)
+		VALUES ($1, $2::uuid, $3, $4, $5)
+		ON CONFLICT (entity_type, entity_id, field_name)
+		DO UPDATE SET original_hash = EXCLUDED.original_hash
+		RETURNING pseudonym
+	`, entityType, entityID, fieldName, originalHash, token).Scan(&effective)
+	if err != nil {
+		return "", fmt.Errorf("upsert pseudonym (%s.%s): %w", entityType, fieldName, err)
+	}
+	return effective, nil
+}
+
+// CountPseudonyms returns the number of rows currently in vault.pseudonym_map.
+// Used to prove that anonymization writes nothing to the reversible map.
+func (s *Store) CountPseudonyms(ctx context.Context) (int, error) {
+	var n int
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM vault.pseudonym_map`).Scan(&n); err != nil {
+		return 0, fmt.Errorf("count pseudonyms: %w", err)
+	}
+	return n, nil
+}
+
+// studentPIIColumns whitelists the core.students columns that may be resolved
+// from a pseudonym, guarding the dynamic column name against SQL injection.
+var studentPIIColumns = map[string]bool{
+	"last_name": true, "first_name": true, "middle_name": true,
+	"email": true, "phone": true,
+}
+
+// RestorePseudonym reverses a student pseudonym: it looks the token up in
+// vault.pseudonym_map to recover (entity_id, field_name), then decrypts the
+// original value from core.students. This demonstrates that pseudonymization is
+// reversible for anyone holding vault access. ok is false if the token is
+// unknown.
+func (s *Store) RestorePseudonym(ctx context.Context, token string) (original string, ok bool, err error) {
+	var entityID, fieldName string
+	scanErr := s.pool.QueryRow(ctx, `
+		SELECT entity_id::text, field_name
+		FROM vault.pseudonym_map
+		WHERE entity_type = 'student' AND pseudonym = $1
+	`, token).Scan(&entityID, &fieldName)
+	if errors.Is(scanErr, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+	if scanErr != nil {
+		return "", false, fmt.Errorf("lookup pseudonym: %w", scanErr)
+	}
+	if !studentPIIColumns[fieldName] {
+		return "", false, fmt.Errorf("unexpected field_name %q in pseudonym_map", fieldName)
+	}
+
+	// fieldName is whitelisted above, so this interpolation is safe.
+	query := fmt.Sprintf(
+		`SELECT vault.decrypt_pii(%s) FROM core.students WHERE id = $1::uuid`, fieldName)
+	var value *string
+	if err := s.pool.QueryRow(ctx, query, entityID).Scan(&value); err != nil {
+		return "", false, fmt.Errorf("decrypt restored field: %w", err)
+	}
+	if value == nil {
+		return "", true, nil
+	}
+	return *value, true, nil
 }
 
 // execBatch sends a batch, reads all results, and returns the total rows

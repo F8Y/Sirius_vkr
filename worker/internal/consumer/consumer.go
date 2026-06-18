@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"sirius27/worker/internal/anonymizer"
 	"sirius27/worker/internal/config"
 	"sirius27/worker/internal/importer"
 	"sirius27/worker/internal/job"
@@ -150,7 +151,7 @@ func (c *Consumer) executeJob(ctx context.Context, msg job.JobStreamMessage) err
 	case "import":
 		return c.runImport(ctx, msg)
 	case "anonymize":
-		return c.runAnonymizeStub(ctx, msg)
+		return c.runAnonymize(ctx, msg)
 	default:
 		return fmt.Errorf("unknown job type: %q", msg.Type)
 	}
@@ -182,20 +183,36 @@ func (c *Consumer) runImport(ctx context.Context, msg job.JobStreamMessage) erro
 	return nil
 }
 
-// runAnonymizeStub is a placeholder until the anonymization pipeline (Batch 3).
-func (c *Consumer) runAnonymizeStub(ctx context.Context, msg job.JobStreamMessage) error {
-	if err := c.store.UpdateStatus(ctx, msg.JobID, "processing", 50); err != nil {
+// runAnonymize executes the real de-identification pipeline (pseudonymize or
+// anonymize) selected by payload.mode against payload.dataset.
+func (c *Consumer) runAnonymize(ctx context.Context, msg job.JobStreamMessage) error {
+	mode := ""
+	if msg.Payload.Mode != nil {
+		mode = *msg.Payload.Mode
+	}
+	if mode == "" {
+		return fmt.Errorf("anonymize job requires payload.mode (pseudonymize|anonymize)")
+	}
+	dataset := "students"
+	if msg.Payload.Dataset != nil && *msg.Payload.Dataset != "" {
+		dataset = *msg.Payload.Dataset
+	}
+
+	if err := c.store.UpdateStatus(ctx, msg.JobID, "processing", 5); err != nil {
 		return fmt.Errorf("failed to transition to processing: %w", err)
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(500 * time.Millisecond):
+
+	progress := func(p int) {
+		if err := c.store.UpdateStatus(ctx, msg.JobID, "processing", p); err != nil {
+			log.Printf("[Consumer] [Warning] progress update failed for job %s: %v", msg.JobID, err)
+		}
 	}
-	result := map[string]any{
-		"message": "anonymize pipeline not yet implemented (Batch 3)",
+
+	report, err := anonymizer.New(c.store, c.cfg.OutputDir).Run(ctx, msg.JobID, mode, dataset, progress)
+	if err != nil {
+		return err
 	}
-	if err := c.store.MarkDone(ctx, msg.JobID, result); err != nil {
+	if err := c.store.MarkDone(ctx, msg.JobID, report); err != nil {
 		return fmt.Errorf("failed to mark job as completed in DB: %w", err)
 	}
 	return nil

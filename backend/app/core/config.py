@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     secret_key: str = _DEFAULT_SECRET_KEY
     debug: bool = False
 
+    # Shared dataset drop-zone (bind-mounted, see docker-compose). Uploaded
+    # import files land here; the worker reads them from the same path.
+    import_dir: str = "/data/imports"
+
     @model_validator(mode="after")
     def _forbid_default_secret_in_prod(self) -> "Settings":
         """Fail fast: never run with the placeholder secret outside debug."""

@@ -1,24 +1,21 @@
-import type { JobPayload, JobResponse } from "../model/types";
+import { apiFetch } from "@/shared/api";
+import type { JobPayload, JobResponse, JobType } from "../model/types";
 
-export async function createJob(
-  type: "import" | "anonymize",
-  payload: JobPayload
-): Promise<JobResponse> {
-  const response = await fetch("/api/v1/jobs", {
+export async function createJob(type: JobType, payload: JobPayload): Promise<JobResponse> {
+  return apiFetch<JobResponse>("/api/v1/jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type, payload }),
   });
-  if (!response.ok) {
-    throw new Error(`Не удалось создать задачу: ${response.statusText}`);
-  }
-  return response.json() as Promise<JobResponse>;
 }
 
 export async function fetchJob(jobId: string): Promise<JobResponse> {
-  const response = await fetch(`/api/v1/jobs/${jobId}`);
-  if (!response.ok) {
-    throw new Error(`Не удалось получить задачу ${jobId}: ${response.statusText}`);
-  }
-  return response.json() as Promise<JobResponse>;
+  return apiFetch<JobResponse>(`/api/v1/jobs/${jobId}`);
+}
+
+/** Upload one or more dataset files (multipart) → returns the created import job. */
+export async function uploadDataset(files: File[]): Promise<JobResponse> {
+  const form = new FormData();
+  for (const file of files) form.append("files", file);
+  return apiFetch<JobResponse>("/api/v1/data/upload", { method: "POST", body: form });
 }
