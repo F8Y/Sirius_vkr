@@ -3,10 +3,20 @@ import { directionColor, directionLabel } from "@/shared/lib/direction";
 
 /**
  * Direction tag — the only place a direction's colour appears (DESIGN_BRIEF §3).
- * Soft tinted background + saturated text in the direction colour.
+ * Saturated fill in the direction colour with white text on light surfaces; over
+ * a coloured cover (`onColor`) it flips to a frosted-white pill with coloured text.
  */
-export function DirectionTag({ direction }: { direction?: string | null }) {
+export function DirectionTag({
+  direction,
+  onColor = false,
+}: {
+  direction?: string | null;
+  onColor?: boolean;
+}) {
   const color = directionColor(direction);
+  const palette = onColor
+    ? { backgroundColor: "rgba(255, 255, 255, 0.92)", color }
+    : { backgroundColor: color, color: "#fff" };
   return (
     <span
       style={{
@@ -16,8 +26,7 @@ export function DirectionTag({ direction }: { direction?: string | null }) {
         fontSize: "0.7rem",
         fontWeight: 700,
         borderRadius: "9999px",
-        backgroundColor: `${color}1f`,
-        color,
+        ...palette,
         whiteSpace: "nowrap",
       }}
     >

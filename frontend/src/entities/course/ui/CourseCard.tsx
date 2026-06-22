@@ -13,11 +13,14 @@ export function CourseCard({ course, href }: { course: CourseSummary; href: stri
   const color = directionColor(course.direction);
   return (
     <Link href={href} className="course-card">
-      <div className="course-card-cover" style={{ backgroundColor: `${color}1f` }}>
-        <span className="course-card-monogram" style={{ color }}>
+      <div
+        className="course-card-cover"
+        style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}b0 100%)` }}
+      >
+        <span className="course-card-monogram" style={{ color: "#fff" }}>
           {course.title.slice(0, 1)}
         </span>
-        <DirectionTag direction={course.direction} />
+        <DirectionTag direction={course.direction} onColor />
       </div>
       <div className="course-card-body">
         <div className="course-card-title">{course.title}</div>

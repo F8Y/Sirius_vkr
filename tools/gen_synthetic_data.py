@@ -26,10 +26,18 @@ random.seed(42)
 
 RELATION_TYPES = ["mother", "father", "guardian"]
 
+# Birth years are drawn from a deliberately NARROW range. Anonymization
+# generalizes the exact date into a 5-year band (see worker generalizeBirth);
+# a narrow source range means records collapse into a few large equivalence
+# classes, so k-anonymity reaches the >= 5 target instead of producing
+# singleton bands (k = 1). Names / email / phone stay diverse on purpose —
+# they are masked or removed and never enter the k computation.
+BIRTH_YEAR_MIN = 2010
+BIRTH_YEAR_MAX = 2015
 
-def _random_birth_date(min_age: int = 8, max_age: int = 18) -> date:
-    today = date.today()
-    birth_year = today.year - random.randint(min_age, max_age)
+
+def _random_birth_date() -> date:
+    birth_year = random.randint(BIRTH_YEAR_MIN, BIRTH_YEAR_MAX)
     birth_month = random.randint(1, 12)
     birth_day = random.randint(1, 28)  # capped at 28 to avoid invalid dates
     return date(birth_year, birth_month, birth_day)
@@ -141,9 +149,15 @@ def write_csv(rows: list[dict], path: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate synthetic PD CSVs for Сириус 27")
-    parser.add_argument("--count", type=int, default=100, help="Number of students to generate")
-    parser.add_argument("--output", type=str, default="./output", help="Output directory")
+    parser = argparse.ArgumentParser(
+        description="Generate synthetic PD CSVs for Сириус 27"
+    )
+    parser.add_argument(
+        "--count", type=int, default=100, help="Number of students to generate"
+    )
+    parser.add_argument(
+        "--output", type=str, default="./output", help="Output directory"
+    )
     args = parser.parse_args()
 
     out = Path(args.output)

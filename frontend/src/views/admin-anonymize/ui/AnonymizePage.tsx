@@ -113,6 +113,14 @@ export function AnonymizePage() {
   const result = job?.status === "done" ? (job.result as AnonymizeResult | undefined) : undefined;
   const k = result?.k_anonymity;
 
+  // Label + applied technique for a quasi-identifier, taken from the plan that
+  // actually ran (result's dataset/mode), falling back to generalisation.
+  const resultPlan = result ? FIELD_PLANS[result.dataset][result.mode] : null;
+  const quasiInfo = (fieldName: string) => {
+    const entry = resultPlan?.find((f) => f.field === fieldName);
+    return { label: entry?.label ?? fieldName, method: entry?.method ?? "Обобщение" };
+  };
+
   return (
     <AdminShell eyebrow="Защита данных · 152-ФЗ" title="Обезличивание">
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -232,43 +240,74 @@ export function AnonymizePage() {
         )}
 
         {/* k-anonymity panel */}
-        {k && (
-          <div className="panel">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div className="panel-title">k-анонимность</div>
+        <div className="panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="panel-title">k-анонимность</div>
+            {k && (
               <StatusChip
                 label={k.compliant ? "Соответствует" : "Не соответствует"}
                 tone={k.compliant ? "green" : "red"}
               />
-            </div>
+            )}
+          </div>
 
-            <div className="k-panel">
-              <div className={`k-dial ${k.compliant ? "compliant" : "violation"}`}>
-                <span className="k-value">{k.k}</span>
-                <span className="k-label">k</span>
+          {k ? (
+            <>
+              <div className="k-panel">
+                <div className={`k-dial ${k.compliant ? "compliant" : "violation"}`}>
+                  <span className="k-value">{k.k}</span>
+                  <span className="k-label">k</span>
+                </div>
+
+                <div className="kpi-grid" style={{ width: "100%" }}>
+                  <KpiPlate label="Целевой порог" value={`k ≥ ${k.threshold}`} />
+                  <KpiPlate label="Классы эквивалентности" value={k.equivalence_classes} />
+                  <KpiPlate label="Всего записей" value={k.total_records} />
+                  {typeof k.k_before_generalization === "number" && (
+                    <KpiPlate
+                      label="k до обобщения"
+                      value={k.k_before_generalization}
+                      accent="muted"
+                      hint={`после: ${k.k}`}
+                    />
+                  )}
+                </div>
               </div>
 
-              <div className="kpi-grid" style={{ width: "100%" }}>
-                <KpiPlate label="Порог" value={k.threshold} />
-                <KpiPlate label="Классы эквивалентности" value={k.equivalence_classes} />
-                <KpiPlate label="Всего записей" value={k.total_records} />
-                {typeof k.k_before_generalization === "number" && (
-                  <KpiPlate
-                    label="k до обобщения"
-                    value={k.k_before_generalization}
-                    accent="muted"
-                    hint={`после: ${k.k}`}
-                  />
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <span className="form-label">Квазиидентификаторы и применённая техника</span>
+                {k.quasi_identifiers.length === 0 ? (
+                  <div className="muted">—</div>
+                ) : (
+                  k.quasi_identifiers.map((qi) => {
+                    const info = quasiInfo(qi);
+                    return (
+                      <div key={qi} className="field-row">
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span className="field-name">{info.label}</span>
+                          <span className="tag tag-quasi">Квазиидентификатор</span>
+                        </div>
+                        <span className="tag tag-method">{info.method}</span>
+                      </div>
+                    );
+                  })
                 )}
               </div>
-            </div>
 
-            <div className="panel-subtitle">
-              Квазиидентификаторы: {k.quasi_identifiers.join(", ") || "—"}
-              {k.smallest_class_example ? ` · мин. класс: ${k.smallest_class_example}` : ""}
+              {k.smallest_class_example && (
+                <div className="panel-subtitle">
+                  Мин. класс эквивалентности: {k.smallest_class_example}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="dropzone" style={{ cursor: "default" }}>
+              {result
+                ? "k-анонимность рассчитывается только в режиме анонимизации."
+                : "Запустите обработку, чтобы рассчитать k-анонимность."}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Mode-specific proof */}
         {result?.pseudonymization && (

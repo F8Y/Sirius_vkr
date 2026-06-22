@@ -165,9 +165,13 @@ def _person(female: bool | None = None) -> dict:
     return {"last_name": ln, "first_name": fn, "middle_name": mn}
 
 
-def _birth_date(min_age: int = 9, max_age: int = 17) -> date:
-    today = datetime.now(tz=UTC).date()
-    year = today.year - _rng.randint(min_age, max_age)
+def _birth_date() -> date:
+    # Birth years are confined to a single 5-year generalization band so that,
+    # after anonymization generalizes the exact date into a 5-year band, the
+    # demo students collapse into one large equivalence class and k-anonymity
+    # stays >= 5 (no singleton bands → no k = 1). Mirrors the narrow range used
+    # by tools/gen_synthetic_data.py.
+    year = _rng.randint(2010, 2014)
     return date(year, _rng.randint(1, 12), _rng.randint(1, 28))
 
 

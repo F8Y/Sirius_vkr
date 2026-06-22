@@ -48,7 +48,7 @@ export function LoginPage() {
           gap: "20px",
           padding: "48px",
           background:
-            "linear-gradient(135deg, rgba(28,160,196,0.14) 0%, rgba(141,198,63,0.14) 100%)",
+            "linear-gradient(135deg, rgba(47,107,255,0.14) 0%, rgba(28,160,196,0.14) 100%)",
         }}
         className="login-brand-panel"
       >

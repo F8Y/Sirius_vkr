@@ -39,7 +39,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <section className="portal-hero">
+      <section className="portal-hero portal-hero--vivid">
         <div>
           <div className="portal-hero-title">
             {isParentView

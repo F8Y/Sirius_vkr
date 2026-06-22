@@ -5,9 +5,9 @@
  * brand teal so unknown directions still read as a neutral category.
  */
 const DIRECTION_COLOR: Record<string, string> = {
-  Наука: "#1a56db",
-  Искусство: "#7c3aed",
-  Спорт: "#ea580c",
+  Наука: "#2f6bff",
+  Искусство: "#8b5cf6",
+  Спорт: "#f59e0b",
 };
 
 const FALLBACK = "#1ca0c4";
